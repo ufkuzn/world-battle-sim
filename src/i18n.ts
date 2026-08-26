@@ -1,6 +1,6 @@
 export const i18n = {
   en: {
-    title: "God Mode",
+    title: "World Battle Sim",
     timeControls: "Time Controls",
     play: "Play",
     pause: "Pause",
@@ -23,7 +23,7 @@ export const i18n = {
     modalCancel: "Cancel"
   },
   tr: {
-    title: "Tanrı Modu",
+    title: "World Battle Sim",
     timeControls: "Zaman Kontrolü",
     play: "Başlat",
     pause: "Durdur",
