@@ -1,0 +1,164 @@
+:root {
+  --bg-color: #1a1a1d;
+  --panel-bg: #2d2d34;
+  --text-primary: #e0e0e0;
+  --accent: #4ecca3;
+  --accent-hover: #45b38f;
+  --border: #3d3d45;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+#ui-panel {
+  width: 300px;
+  background-color: var(--panel-bg);
+  border-right: 1px solid var(--border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
+h1 {
+  font-size: 1.5rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h3 {
+  font-size: 1rem;
+  color: #a0a0a0;
+  margin-bottom: 5px;
+}
+
+button {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  text-align: left;
+}
+
+button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+button.active, #btn-play-pause.playing {
+  background-color: rgba(78, 204, 163, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.speed-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.speed-controls button {
+  flex: 1 1 30%;
+  text-align: center;
+  padding: 8px 5px;
+}
+
+#stats-panel {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+#game-container {
+  flex: 1;
+  position: relative;
+  background-color: #0b0b0e;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+canvas {
+  display: block;
+}
+
+/* Notification Type Classes */
+.notif-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  border-left: 4px solid var(--border);
+  background: rgba(0,0,0,0.3);
+}
+
+.notif-default {
+  border-left-color: var(--text-primary);
+}
+
+.notif-tech {
+  border-left-color: #00d2d3;
+  color: #c8ffff;
+}
+
+.notif-diplomacy {
+  border-left-color: #4ecca3;
+  color: #e0f7ef;
+}
+
+.notif-war {
+  border-left-color: #ff9f43;
+  color: #ffe8d6;
+}
+
+.notif-disaster {
+  border-left-color: #ff6b6b;
+  color: #ffd6d6;
+}
+
+.notif-error {
+  border-left-color: #ee5253;
+  color: #ffc2c2;
+}
+
+/* Hover effects for notification buttons */
+#btn-notif-history:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#btn-close-notif:hover {
+  background-color: rgba(255, 107, 107, 0.1);
+}

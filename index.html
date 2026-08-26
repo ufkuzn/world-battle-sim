@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Evolution Simulator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="ui-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
+          <h1 id="ui-title" style="border: none; padding: 0;">God Mode</h1>
+          <button id="btn-lang" style="padding: 5px 10px;">TR</button>
+        </div>
+        
+        <div class="control-group">
+          <h3 id="ui-time-controls">Time Controls</h3>
+          <button id="btn-play-pause">Pause</button>
+          <div class="speed-controls">
+            <button id="btn-speed-1x" class="btn-speed active" data-speed="1">1x</button>
+          <button id="btn-speed-2x" class="btn-speed" data-speed="2">2x</button>
+          <button id="btn-speed-5x" class="btn-speed" data-speed="5">5x</button>
+          <button id="btn-speed-10x" class="btn-speed" data-speed="10">10x</button>
+          <button id="btn-speed-25x" class="btn-speed" data-speed="25">25x</button>
+          <button id="btn-speed-50x" class="btn-speed" data-speed="50">50x</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3 id="ui-god-actions">God Actions</h3>
+          <button class="btn-action active" data-action="none" id="ui-inspect">Inspect</button>
+          <button class="btn-action" data-action="spawn_race" id="ui-spawn">Spawn Race</button>
+          <button class="btn-action" data-action="build_mountain" id="ui-build">Build Mountain (Wall)</button>
+          <button class="btn-action" data-action="disaster_meteor" id="ui-meteor">Meteor Strike</button>
+        </div>
+
+        <div class="control-group">
+          <h3 id="ui-world-stats">World Stats</h3>
+          <div id="stats-panel">
+            <p><span id="ui-stat-races">Races:</span> <span id="stat-races">0</span></p>
+            <p><span id="ui-stat-pop">World Pop:</span> <span id="stat-pop">0</span></p>
+            <p><span id="ui-stat-year">Year:</span> <span id="stat-year">0</span></p>
+          </div>
+        </div>
+
+        <div class="control-group" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+          <h3 id="ui-races-list-title">Active Races</h3>
+          <div id="races-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding-right: 5px;">
+            <!-- Races injected here -->
+          </div>
+        </div>
+      </div>
+      
+      <div id="game-container">
+        <!-- Notification History Toggle Button -->
+        <button id="btn-notif-history" style="position: absolute; top: 15px; right: 15px; z-index: 1001; background: var(--panel-bg); font-size: 20px; padding: 5px 10px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.5);" title="Bildirim Geçmişi">🔔</button>
+        
+        <!-- Notification History Panel -->
+        <div id="notif-history-panel" style="display: none; position: absolute; top: 60px; right: 15px; width: 350px; max-height: 400px; background: rgba(45, 45, 52, 0.95); border: 1px solid var(--border); border-radius: 8px; z-index: 1000; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+          <div style="padding: 10px 15px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--accent); display: flex; justify-content: space-between; align-items: center;">
+            Bildirim Geçmişi
+            <button id="btn-close-notif" style="padding: 2px 8px; font-size: 12px; border-color: #ff6b6b; color: #ff6b6b;">Kapat</button>
+          </div>
+          <div id="notif-history-list" style="padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex: 1;">
+            <!-- History items injected here -->
+          </div>
+        </div>
+
+        <canvas id="game-canvas"></canvas>
+        <div id="notifications-container" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
+      </div>
+    </div>
+
+    <!-- Modal for Race Naming -->
+    <div id="race-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center;">
+      <div style="background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); width: 300px; display: flex; flex-direction: column; gap: 15px;">
+        <h3 id="ui-modal-title" style="color: var(--accent); margin: 0;">Name Your Race</h3>
+        <input type="text" id="modal-input" placeholder="Race Name" style="padding: 10px; border-radius: 4px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Inter', sans-serif;" autocomplete="off" />
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button id="modal-cancel" style="border-color: #ff6b6b; color: #ff6b6b;">Cancel</button>
+          <button id="modal-ok" style="background: rgba(78, 204, 163, 0.2); border-color: var(--accent); color: var(--accent);">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Inspect -->
+    <div id="inspect-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 90; justify-content: center; align-items: center;">
+      <div style="background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); width: 350px; display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 id="inspect-name" style="margin: 0; display: flex; align-items: center; gap: 10px;">Race Name</h3>
+          <button id="inspect-close" style="border-color: #ff6b6b; color: #ff6b6b; padding: 2px 8px;">X</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+          <p style="margin:0;"><strong>Nüfus:</strong> <span id="inspect-pop">0</span></p>
+          <p style="margin:0;"><strong>Alan:</strong> <span id="inspect-area">0</span></p>
+          <p style="margin:0;"><strong>Ana Vatan:</strong> <span id="inspect-home"></span></p>
+          <p style="margin:0;"><strong>Bonus:</strong> <span id="inspect-buff" style="color: var(--accent);"></span></p>
+          <p style="margin:0;"><strong>Teknolojiler:</strong> <span id="inspect-tech"></span></p>
+          <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <p style="margin: 0 0 5px 0;"><strong>Diplomasi (Düşmanlar / Dostlar):</strong></p>
+            <div id="inspect-diplomacy" style="max-height: 100px; overflow-y: auto; font-size: 13px;"></div>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+            <button id="inspect-rename" style="background: rgba(78, 204, 163, 0.2); border-color: var(--accent); color: var(--accent); font-size: 12px; padding: 5px 10px;">İsim Değiştir</button>
+            <button id="inspect-delete" style="background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; color: #ff6b6b; font-size: 12px; padding: 5px 10px;">Irkı Sil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Game Over -->
+    <div id="game-over-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 200; justify-content: center; align-items: center;">
+      <div style="background: var(--panel-bg); padding: 40px; border-radius: 12px; border: 2px solid var(--accent); text-align: center; max-width: 500px; box-shadow: 0 0 30px rgba(78, 204, 163, 0.4);">
+        <h1 id="game-over-title" style="color: var(--accent); font-size: 2.5rem; margin-bottom: 20px; border: none;">Oyun Bitti!</h1>
+        <p id="game-over-text" style="font-size: 1.2rem; line-height: 1.6; margin-bottom: 30px;">[Irk] Dünyaya Hakim Oldu!</p>
+        <button id="game-over-close" style="background: rgba(78, 204, 163, 0.2); border-color: var(--accent); color: var(--accent); font-size: 1.1rem; padding: 10px 30px;">Kapat ve İncele</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

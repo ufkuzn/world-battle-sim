@@ -1,0 +1,20 @@
+{
+  "name": "world-evolution-sim",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "jimp": "^1.6.1",
+    "pngjs": "^7.0.0",
+    "simplex-noise": "^4.0.3"
+  }
+}
