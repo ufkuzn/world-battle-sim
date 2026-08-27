@@ -52,8 +52,8 @@ https.get(url, (res) => {
         console.log("Downloaded geojson");
         const geojson = JSON.parse(body);
         
-        const cols = 200;
-        const rows = 100;
+        const cols = 150;
+        const rows = 75;
         let lines = [];
         
         // Build an index for performance: bounding box for each feature

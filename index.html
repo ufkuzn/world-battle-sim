@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>World Evolution Simulator</title>
+    <title>World Battle Sim</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.css" />
@@ -55,7 +55,8 @@
       </div>
       
       <div id="game-container">
-        <!-- Notification History Toggle Button -->
+        <!-- Notification History Toggle Button & FPS -->
+        <div id="ui-fps" style="position: absolute; top: 20px; right: 70px; z-index: 1001; color: var(--accent); font-family: monospace; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px #000;">FPS: 0</div>
         <button id="btn-notif-history" style="position: absolute; top: 15px; right: 15px; z-index: 1001; background: var(--panel-bg); font-size: 20px; padding: 5px 10px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.5);" title="Bildirim Geçmişi">🔔</button>
         
         <!-- Notification History Panel -->
@@ -107,6 +108,35 @@
             <button id="inspect-rename" style="background: rgba(78, 204, 163, 0.2); border-color: var(--accent); color: var(--accent); font-size: 12px; padding: 5px 10px;">İsim Değiştir</button>
             <button id="inspect-delete" style="background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; color: #ff6b6b; font-size: 12px; padding: 5px 10px;">Irkı Sil</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Resource Inspect -->
+    <div id="inspect-res-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 90; justify-content: center; align-items: center;">
+      <div style="background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); width: 350px; display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 id="inspect-res-name" style="margin: 0; display: flex; align-items: center; gap: 10px;">Maden Adı</h3>
+          <button id="inspect-res-close" style="border-color: #ff6b6b; color: #ff6b6b; padding: 2px 8px;">X</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+          <p style="margin:0;"><strong>Açıklama:</strong> <span id="inspect-res-desc"></span></p>
+          <p style="margin:0;"><strong>Avantajı:</strong> <span id="inspect-res-buff" style="color: var(--accent);"></span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Person Inspect -->
+    <div id="inspect-person-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 95; justify-content: center; align-items: center;">
+      <div style="background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); width: 250px; display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 id="inspect-person-title" style="margin: 0; display: flex; align-items: center; gap: 10px;">Birey Bilgisi</h3>
+          <button id="inspect-person-close" style="border-color: #ff6b6b; color: #ff6b6b; padding: 2px 8px;">X</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+          <p style="margin:0;"><strong>Irk:</strong> <span id="inspect-person-race"></span></p>
+          <p style="margin:0;"><strong>Yaş:</strong> <span id="inspect-person-age"></span></p>
+          <p style="margin:0;"><strong>Can (HP):</strong> <span id="inspect-person-hp"></span></p>
         </div>
       </div>
     </div>

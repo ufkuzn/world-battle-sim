@@ -1,5 +1,6 @@
 import './style.css';
 import { GameEngine, GodAction } from './engine';
+import { ResourceType } from './map';
 import { currentLang, setLang, t } from './i18n';
 import { Diplomacy } from './civilization';
 import { Biome } from './map';
@@ -69,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Game over
   const gameOverModal = document.getElementById('game-over-modal')!;
-  const gameOverTitle = document.getElementById('game-over-title')!;
   const gameOverText = document.getElementById('game-over-text')!;
   const gameOverClose = document.getElementById('game-over-close')!;
 
@@ -103,6 +103,58 @@ document.addEventListener('DOMContentLoaded', () => {
     setLang(currentLang === 'tr' ? 'en' : 'tr');
     applyLanguage();
   });
+
+  // --- Resource Inspect Modal ---
+  const inspectResModal = document.getElementById('inspect-res-modal') as HTMLElement;
+  const inspectResName = document.getElementById('inspect-res-name') as HTMLElement;
+  const inspectResDesc = document.getElementById('inspect-res-desc') as HTMLElement;
+  const inspectResBuff = document.getElementById('inspect-res-buff') as HTMLElement;
+  const inspectResClose = document.getElementById('inspect-res-close') as HTMLButtonElement;
+
+  inspectResClose.addEventListener('click', () => {
+    inspectResModal.style.display = 'none';
+  });
+
+  // --- Person Inspect Modal ---
+  const inspectPersonModal = document.getElementById('inspect-person-modal') as HTMLElement;
+  const inspectPersonRace = document.getElementById('inspect-person-race') as HTMLElement;
+  const inspectPersonAge = document.getElementById('inspect-person-age') as HTMLElement;
+  const inspectPersonHp = document.getElementById('inspect-person-hp') as HTMLElement;
+  const inspectPersonClose = document.getElementById('inspect-person-close') as HTMLButtonElement;
+
+  inspectPersonClose.addEventListener('click', () => {
+    inspectPersonModal.style.display = 'none';
+  });
+
+  engine.onInspectPersonRequest = (person, raceId) => {
+    engine.pause();
+    updatePlayPauseButton();
+    const race = engine.civManager.races.get(raceId);
+    if (!race) return;
+
+    inspectPersonRace.innerHTML = `<span style="display:inline-block; width:12px; height:12px; background:${race.color}; border-radius:50%;"></span> ${race.name}`;
+    inspectPersonAge.textContent = Math.floor(person.age).toString();
+    inspectPersonHp.innerHTML = `${Math.floor(person.hp)} / ${person.maxHp} <div style="width:100%; height:5px; background:#333; margin-top:3px; border-radius:2px;"><div style="width:${Math.max(0, (person.hp / person.maxHp) * 100)}%; height:100%; background:#4ecca3; border-radius:2px;"></div></div>`;
+    
+    inspectPersonModal.style.display = 'flex';
+  };
+
+  engine.onInspectResourceRequest = (res) => {
+    engine.pause();
+    updatePlayPauseButton();
+    
+    if (res.type === ResourceType.GOLD) {
+      inspectResName.innerHTML = '💰 Altın Madeni';
+      inspectResDesc.textContent = 'Parıltılı ve değerli bir maden yatağı. Bu madenin etrafına yerleşen veya keşfeden ırklar zenginleşir.';
+      inspectResBuff.textContent = 'Keşfeden ırkın nüfusu %20 daha hızlı artar.';
+    } else {
+      inspectResName.innerHTML = '⛏️ Demir Madeni';
+      inspectResDesc.textContent = 'Sert ve dayanıklı metallerin çıkarılabildiği bir maden yatağı. Silah yapımı için vazgeçilmezdir.';
+      inspectResBuff.textContent = 'Keşfeden ırkın askerleri yakın ve uzak mesafe saldırılarında +10 Bonus Hasar vurur.';
+    }
+    
+    inspectResModal.style.display = 'flex';
+  };
 
   // --- Controls ---
   btnPlayPause.addEventListener('click', () => {
@@ -151,13 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function formatPop(pop: number): string {
-    const p = Math.floor(pop);
-    if (p >= 1000000) {
-      return (p / 1000000).toFixed(1) + 'M';
-    } else if (p >= 1000) {
-      return Math.floor(p / 1000) + 'K'; // e.g. 15K, 1500K
-    }
-    return p.toString();
+    return Math.floor(pop).toString();
   }
 
   function updateRacesList() {
@@ -248,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     inspectName.innerHTML = `<span style="display:inline-block; width:12px; height:12px; background:${race.color}; border-radius:50%;"></span> ${race.name}`;
     inspectPop.textContent = Math.floor(race.population).toString();
-    inspectArea.textContent = race.cells.length.toString() + ' kare';
+    inspectArea.textContent = 'Göçebe (Nomad)';
 
     let biomeStr = '';
     let buffStr = '';
@@ -273,6 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (race.seafaring) techs.push('Denizcilik (Seafaring)');
     if (race.heatResistance) techs.push('Sıcak Direnci (Heat Res)');
     if (race.coldResistance) techs.push('Soğuk Direnci (Cold Res)');
+    if (race.hasSwords) techs.push('Kılıç (Sword)');
+    if (race.hasRifles) techs.push('Tüfek (Rifle)');
+    if (race.hasBombs) techs.push('Bomba (Bomb)');
+    if (race.hasGold) techs.push('Altın (Nüfus Artışı)');
+    if (race.hasIron) techs.push('Demir (Ekstra Hasar)');
     inspectTech.textContent = techs.length > 0 ? techs.join(', ') : 'Yok';
 
     let diplomacyHtml = '';
@@ -312,11 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const race = engine.civManager.races.get(currentInspectedRaceId);
     if (race) {
       if (confirm(`"${race.name}" ırkını silmek istediğinize emin misiniz?`)) {
-        race.cells.forEach(c => {
-           c.raceId = null;
-        });
-        engine.map.isDirty = true;
-        
+        race.persons = [];
         engine.civManager.races.delete(currentInspectedRaceId);
         
         inspectModal.style.display = 'none';
@@ -327,10 +374,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Update UI Stats Loop ---
+  const uiFps = document.getElementById('ui-fps')!;
+  
   function updateUI() {
     statRaces.textContent = `${engine.civManager.races.size}/${engine.civManager.maxRaces}`;
     statPop.textContent = formatPop(engine.civManager.getTotalPopulation());
-    statYear.textContent = Math.floor(engine.year / 10).toString();
+    statYear.textContent = engine.year.toString();
+    uiFps.textContent = `FPS: ${engine.fps}`;
     updateRacesList();
     requestAnimationFrame(updateUI);
   }

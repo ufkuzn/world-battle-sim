@@ -1,4 +1,3 @@
-import { EARTH_ASCII } from './earth_data';
 import { createNoise2D } from 'simplex-noise';
 
 export const Biome = {
@@ -11,13 +10,30 @@ export const Biome = {
 } as const;
 export type Biome = typeof Biome[keyof typeof Biome];
 
+export const ResourceType = {
+  GOLD: 0,
+  IRON: 1
+} as const;
+export type ResourceType = typeof ResourceType[keyof typeof ResourceType];
+
+export class ResourceNode {
+  x: number;
+  y: number;
+  type: ResourceType;
+  constructor(x: number, y: number, type: ResourceType) {
+    this.x = x;
+    this.y = y;
+    this.type = type;
+  }
+}
+
 export const BIOME_COLORS: Record<Biome, string> = {
-  [Biome.WATER]: '#0d2847', // Very dark blue for oceans
-  [Biome.SAND]: '#8c7746',  // Muted dark sand
-  [Biome.GRASS]: '#274a27', // Dark muted grass
-  [Biome.FOREST]: '#122e12', // Deep dark forest
-  [Biome.SNOW]: '#8a949e',   // Muted grayish snow
-  [Biome.MOUNTAIN]: '#2a2a2a', // Dark grey mountains
+  [Biome.WATER]: '#1a3c5e', // deep modern blue
+  [Biome.SAND]: '#d4b872',  // warm sand
+  [Biome.GRASS]: '#4f8f4f', // vibrant green
+  [Biome.FOREST]: '#205220', // deep forest
+  [Biome.SNOW]: '#e0e8f0',   // crisp white/blue snow
+  [Biome.MOUNTAIN]: '#3a3a3a', // dark rock
 };
 
 export class Cell {
@@ -25,9 +41,6 @@ export class Cell {
   y: number;
   biome: Biome;
   originalBiome: Biome;
-  raceId: number | null = null;
-  population: number = 0;
-  isWall: boolean = false; // User built mountain
   recoveryTimer: number = 0;
 
   constructor(x: number, y: number, biome: Biome) {
@@ -47,6 +60,7 @@ export class WorldMap {
   offscreenCtx: CanvasRenderingContext2D | null = null;
   isDirty: boolean = true;
   recoveringCells: Cell[] = [];
+  resources: ResourceNode[] = [];
 
   constructor(cols: number, rows: number) {
     this.cols = cols;
@@ -56,57 +70,86 @@ export class WorldMap {
 
   generate() {
     this.grid = [];
-    const cols = this.cols;
-    const rows = this.rows;
-    
-    // We map our grid to the 100x50 EARTH_ASCII
-    const asciiWidth = EARTH_ASCII[0].length; // 100
-    const asciiHeight = EARTH_ASCII.length;   // 50
     const noise2D = createNoise2D();
 
-    for (let y = 0; y < rows; y++) {
+    for (let y = 0; y < this.rows; y++) {
       const row: Cell[] = [];
-      for (let x = 0; x < cols; x++) {
-        // Map x,y to the ascii grid
-        const asciiX = Math.floor((x / cols) * asciiWidth);
-        const asciiY = Math.floor((y / rows) * asciiHeight);
+      for (let x = 0; x < this.cols; x++) {
         
-        let char = 'W';
-        if (asciiY >= 0 && asciiY < asciiHeight && asciiX >= 0 && asciiX < asciiWidth) {
-          char = EARTH_ASCII[asciiY][asciiX];
-        }
+        // Use Simplex Noise to create islands and continents
+        // Lower frequency for larger landmasses
+        const nx = (x / this.cols) * 2;
+        const ny = (y / this.rows) * 1;
+        
+        // Base elevation
+        let e = 1 * noise2D(1 * nx, 1 * ny) 
+              + 0.5 * noise2D(2 * nx, 2 * ny) 
+              + 0.25 * noise2D(4 * nx, 4 * ny);
+              
+        // Normalize e approximately to -1 .. 1
+        e = e / (1 + 0.5 + 0.25);
+        
+        // calculate distance from center (0 to 1)
+        const dx = (x / this.cols) * 2 - 1;
+        const dy = (y / this.rows) * 2 - 1;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        
+        // Bias center to be land, edges to be water
+        e = e + 0.4 - d * 0.8; 
 
-        // Use Simplex Noise to create organic coastlines
-        const nx = x * 0.05;
-        const ny = y * 0.05;
-        
-        let isLand = char === 'L';
-        
         let biome: Biome = Biome.WATER;
         
-        if (isLand) {
-          // Equator is exactly at normalizedY = 0.5
-          const normalizedY = asciiY / asciiHeight;
+        if (e > -0.1) {
+          // It's land
+          const normalizedY = y / this.rows;
           const distFromEquator = Math.abs(normalizedY - 0.5);
           
-          // Noise for biome mixing to make it organic
-          const biomeNoise = noise2D(nx * 3, ny * 3);
+          // Temperature noise
+          const tempNoise = noise2D(nx * 2, ny * 2);
           
-          if (distFromEquator > 0.35 - biomeNoise * 0.05) biome = Biome.SNOW; // Poles
-          else if (distFromEquator < 0.12 + biomeNoise * 0.05) biome = Biome.FOREST; // Equatorial Jungles
-          else if (distFromEquator < 0.22 - biomeNoise * 0.05) biome = Biome.SAND; // Deserts
-          else biome = Biome.GRASS; // Temperate Zones
+          if (distFromEquator > 0.35 - tempNoise * 0.1) {
+            biome = Biome.SNOW;
+          } else if (distFromEquator < 0.15 + tempNoise * 0.1) {
+            biome = Biome.FOREST;
+          } else {
+            // Moisture noise for sand vs grass
+            const moisture = noise2D(nx * 3 + 10, ny * 3 + 10);
+            if (moisture < -0.2 && distFromEquator > 0.15) {
+              biome = Biome.SAND;
+            } else {
+              biome = Biome.GRASS;
+            }
+          }
+          
+          // Add some random mountain peaks
+          if (e > 0.55) {
+            biome = Biome.MOUNTAIN;
+          }
         }
 
         row.push(new Cell(x, y, biome));
       }
       this.grid.push(row);
     }
+
+    // Place resources
+    this.resources = [];
+    let placed = 0;
+    while (placed < 8) {
+      const rx = Math.floor(Math.random() * this.cols);
+      const ry = Math.floor(Math.random() * this.rows);
+      const cell = this.grid[ry][rx];
+      if (cell.biome !== Biome.WATER && cell.biome !== Biome.MOUNTAIN) {
+        const type = Math.random() > 0.5 ? ResourceType.GOLD : ResourceType.IRON;
+        this.resources.push(new ResourceNode(rx, ry, type));
+        placed++;
+      }
+    }
   }
 
   getCell(x: number, y: number): Cell | null {
-    if (y >= 0 && y < this.grid.length && x >= 0 && x < this.grid[0].length) {
-      return this.grid[y][x];
+    if (y >= 0 && y < this.rows && x >= 0 && x < this.cols) {
+      return this.grid[Math.floor(y)][Math.floor(x)];
     }
     return null;
   }
@@ -146,7 +189,14 @@ export class WorldMap {
         for (let x = 0; x < this.cols; x++) {
           const cell = this.grid[y][x];
           this.offscreenCtx.fillStyle = BIOME_COLORS[cell.biome];
-          this.offscreenCtx.fillRect(Math.floor(x * cellW), Math.floor(y * cellH), Math.ceil(cellW), Math.ceil(cellH));
+          
+          // Draw slightly larger to avoid anti-aliasing gaps between cells
+          this.offscreenCtx.fillRect(
+            Math.floor(x * cellW), 
+            Math.floor(y * cellH), 
+            Math.ceil(cellW) + 1, 
+            Math.ceil(cellH) + 1
+          );
         }
       }
       this.isDirty = false;
@@ -154,6 +204,17 @@ export class WorldMap {
 
     if (this.offscreenCanvas) {
       ctx.drawImage(this.offscreenCanvas, 0, 0);
+      
+      // Draw resources
+      const cellW = canvasWidth / this.cols;
+      const cellH = canvasHeight / this.rows;
+      for (const res of this.resources) {
+        ctx.fillStyle = res.type === ResourceType.GOLD ? '#ffd700' : '#b0c4de';
+        ctx.fillRect((res.x + 0.5) * cellW - 5, (res.y + 0.5) * cellH - 5, 10, 10);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect((res.x + 0.5) * cellW - 5, (res.y + 0.5) * cellH - 5, 10, 10);
+      }
     }
   }
 }
